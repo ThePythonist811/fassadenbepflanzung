@@ -10,7 +10,7 @@ except ImportError:
 
 # GPIO-Pins (entsprechend der Sensoren)
 GPIO_PINS = [2, 3, 4, 17, 27, 22, 10, 9]  # Beispiel GPIO-Pins
-DB_NAME = "sensordata.db"  # Name deiner SQLite-Datenbank
+DB_NAME = "sensordata/sensordata.db"  # Name deiner SQLite-Datenbank
 
 # GPIO-Setup
 def setup_gpio():
