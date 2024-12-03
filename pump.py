@@ -1,5 +1,5 @@
 #import RPi.GPIO as GPIO
-import mock_gpio as GPIO
+import mockgpio as GPIO
 import time
 
 PIN = 18
