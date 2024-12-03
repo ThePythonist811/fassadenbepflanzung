@@ -21,8 +21,6 @@ def pump():
     time.sleep(60)  # Simuliere Pumpenlaufzeit
     action = "Pumpe"
 
-#PASST NICHT!!!
-
 # Aufgaben planen
 schedule.every(10).seconds.do(sensor_check)  # Alle 10 Sekunden
 schedule.every(30).seconds.do(camera.run)  # Jede Minute
