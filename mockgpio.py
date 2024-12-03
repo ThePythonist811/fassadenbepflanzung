@@ -1,19 +1,20 @@
 class GPIO:
-    OUT = "OUT"
-    IN = "IN"
+    HIGH = 1
+    LOW = 0
+    BCM = "BCM"
 
-    def setmode(self, mode):
+    @staticmethod
+    def setmode(mode):
         print(f"GPIO Mode set to {mode}")
 
-    def setup(self, pin, direction):
-        print(f"Pin {pin} set to {direction}")
+    @staticmethod
+    def setup(pin, direction):
+        print(f"Setup Pin {pin} as {direction}")
 
-    def output(self, pin, state):
-        print(f"Pin {pin} output set to {state}")
+    @staticmethod
+    def output(pin, state):
+        print(f"Set Pin {pin} to {'HIGH' if state == GPIO.HIGH else 'LOW'}")
 
-    def input(self, pin):
-        print(f"Reading input from pin {pin}")
-        return 0
-
-    def cleanup(self):
-        print("GPIO cleanup")
+    @staticmethod
+    def cleanup():
+        print("GPIO cleanup complete")
