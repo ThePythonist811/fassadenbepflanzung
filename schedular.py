@@ -7,21 +7,7 @@ import camera
 import pump
 import sensors
 
-action = ""
 target_directory = "sensordata/daily/"
-
-def sensor_check():
-    print("Sensorüberprüfung läuft...")
-    action = "Sensorüberprüfung"
-
-def daily_report():
-    print("Täglicher Bericht wird erstellt...")
-    action = "Täglicher Bericht"
-
-def pump():
-    print("Pumpe wird gestartet...")
-    time.sleep(60)  # Simuliere Pumpenlaufzeit
-    action = "Pumpe"
 
 # Aufgaben planen
 schedule.every(10).seconds.do(sensors.main)  # Alle 10 Sekunden
@@ -38,4 +24,3 @@ print("Scheduler gestartet...")
 # Scheduler laufen lassen
 while True:
     schedule.run_pending()  # Ausstehende Aufgaben ausführen
-    #time.sleep(1)           # Verhindert übermäßige CPU-Auslastung
