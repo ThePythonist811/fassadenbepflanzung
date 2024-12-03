@@ -1,5 +1,9 @@
-#import RPi.GPIO as GPIO
-import mockgpio as GPIO
+try:
+    import RPi.GPIO as GPIO  # Verwende echte GPIO-Bibliothek
+    print("Bibliothek vorhanden!")
+except ImportError:
+    print("Nicht vorhanden!")
+    import mockgpio as GPIO  # Fallback für Tests ohne Raspberry Pi
 import time
 
 PIN = 18

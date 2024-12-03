@@ -1,37 +1,80 @@
 import sqlite3
+import time
 from datetime import datetime
+try:
+    import RPi.GPIO as GPIO  # Verwende echte GPIO-Bibliothek
+    print("Bibliothek vorhanden!")
+except ImportError:
+    print("Nicht vorhanden!")
+    import mockgpio as GPIO  # Fallback für Tests ohne Raspberry Pi
 
-# Verbindung zur Datenbank herstellen
-connection = sqlite3.connect("/home/findus/Organisation/pflanzen2/sensordata/sensordata.db")
-cursor = connection.cursor()
+# GPIO-Pins (entsprechend der Sensoren)
+GPIO_PINS = [2, 3, 4, 17, 27, 22, 10, 9]  # Beispiel GPIO-Pins
+DB_NAME = "feuchtigkeit.db"  # Name deiner SQLite-Datenbank
 
-# Tabelle erstellen (falls nicht vorhanden)
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS feuchtigkeitssensoren (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    sensor_1 REAL NOT NULL,
-    sensor_2 REAL NOT NULL,
-    sensor_3 REAL NOT NULL,
-    sensor_4 REAL NOT NULL,
-    sensor_5 REAL NOT NULL,
-    sensor_6 REAL NOT NULL,
-    sensor_7 REAL NOT NULL,
-    sensor_8 REAL NOT NULL
-)
-""")
+# GPIO-Setup
+def setup_gpio():
+    GPIO.setmode(GPIO.BCM)
+    for pin in GPIO_PINS:
+        GPIO.setup(pin, GPIO.IN)  # Setze die Pins als Eingänge
 
-def speichere_daten(sensorwerte):
+# Datenbank-Setup
+def init_database():
+    """Überprüft, ob die Tabelle 'feuchtigkeitssensoren' existiert."""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
     cursor.execute("""
-    INSERT INTO feuchtigkeitssensoren (sensor_1, sensor_2, sensor_3, sensor_4,
-                                       sensor_5, sensor_6, sensor_7, sensor_8)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, sensorwerte)
-    connection.commit()
+        CREATE TABLE IF NOT EXISTS feuchtigkeitssensoren (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT,
+            sensor_1 REAL,
+            sensor_2 REAL,
+            sensor_3 REAL,
+            sensor_4 REAL,
+            sensor_5 REAL,
+            sensor_6 REAL,
+            sensor_7 REAL,
+            sensor_8 REAL
+        )
+    """)
+    conn.commit()
+    conn.close()
 
-# Beispiel-Daten einfügen
-sensorwerte = [45.3, 50.2, 49.8, 55.0, 60.3, 47.9, 53.1, 52.0]  # Simulierte Werte
-speichere_daten(sensorwerte)
+# Daten in die Datenbank schreiben
+def write_to_database(sensor_values):
+    """Schreibt Sensordaten in die SQLite-Datenbank."""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute("""
+        INSERT INTO feuchtigkeitssensoren (
+            timestamp, sensor_1, sensor_2, sensor_3, sensor_4,
+            sensor_5, sensor_6, sensor_7, sensor_8
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (timestamp, *sensor_values))
+    conn.commit()
+    conn.close()
 
+# GPIO-Zustände lesen und loggen
+def read_gpio_values():
+    """Liest die GPIO-Werte der 8 Pins aus."""
+    return [GPIO.input(pin) for pin in GPIO_PINS]
 
-connection.commit()
+# Hauptprogramm
+def main():
+    setup_gpio()
+    init_database()
+    print("Starte Datenerfassung. Drücke Strg+C zum Beenden.")
+    try:
+        while True:
+            sensor_values = read_gpio_values()
+            print(f"Erfasste Werte: {sensor_values}")
+            write_to_database(sensor_values)
+            time.sleep(1)  # Intervall zwischen den Messungen
+    except KeyboardInterrupt:
+        print("Programm beendet.")
+    finally:
+        GPIO.cleanup()
+
+if __name__ == "__main__":
+    main()
