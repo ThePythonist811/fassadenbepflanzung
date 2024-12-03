@@ -66,15 +66,10 @@ def main():
     init_database()
     print("Starte Datenerfassung. Drücke Strg+C zum Beenden.")
     try:
-        while True:
-            sensor_values = read_gpio_values()
-            print(f"Erfasste Werte: {sensor_values}")
-            write_to_database(sensor_values)
-            time.sleep(1)  # Intervall zwischen den Messungen
+        sensor_values = read_gpio_values()
+        print(f"Erfasste Werte: {sensor_values}")
+        write_to_database(sensor_values)
     except KeyboardInterrupt:
         print("Programm beendet.")
     finally:
         GPIO.cleanup()
-
-if __name__ == "__main__":
-    main()
