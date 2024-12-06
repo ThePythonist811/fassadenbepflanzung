@@ -1,26 +1,42 @@
+import spidev  # SPI-Bibliothek für MCP3008
 import sqlite3
-import time
 from datetime import datetime
-try:
-    import RPi.GPIO as GPIO  # Verwende echte GPIO-Bibliothek
-    print("Bibliothek vorhanden!")
-except ImportError:
-    print("Nicht vorhanden!")
-    import mockgpio as GPIO  # Fallback für Tests ohne Raspberry Pi
+import time
 
-# GPIO-Pins (entsprechend der Sensoren)
-GPIO_PINS = [2, 3, 4, 17, 27, 22, 10, 9]  # Beispiel GPIO-Pins
-DB_NAME = "sensordata/sensordata.db"  # Name deiner SQLite-Datenbank
+DB_NAME = "sensordata/sensordata.db"
 
-# GPIO-Setup
-def setup_gpio():
-    GPIO.setmode(GPIO.BCM)
-    for pin in GPIO_PINS:
-        GPIO.setup(pin, GPIO.IN)  # Setze die Pins als Eingänge
+# SPI-Setup für MCP3008
+spi = spidev.SpiDev()
+spi.open(0, 0)  # SPI-Bus 0, Gerät 0
+spi.max_speed_hz = 1350000
+
+# GPIO- und SPI-Kanäle für die Sensoren (0–7 für 8 Kanäle)
+SENSOR_CHANNELS = list(range(8))
+
+# Individuelle Messbereiche der Sensoren (min, max) in einer Liste
+SENSOR_RANGES = [
+    (0, 500),  # Sensor 1
+    (50, 600),  # Sensor 2
+    (100, 670),  # Sensor 3
+    (30, 550),  # Sensor 4
+    (10, 670),  # Sensor 5
+    (0, 400),  # Sensor 6
+    (20, 650),  # Sensor 7
+    (5, 620)    # Sensor 8
+]
+
+# Funktion zum Auslesen eines analogen Kanals
+def read_channel(channel):
+    adc = spi.xfer2([1, (8 + channel) << 4, 0])
+    data = ((adc[1] & 3) << 8) + adc[2]
+    return data
+
+# Normalisierung der Sensorwerte (auf 0–100% basierend auf individuelle Bereiche)
+def normalize_value(value, min_value, max_value):
+    return round(((value - min_value) / (max_value - min_value)) * 100, 2)
 
 # Datenbank-Setup
 def init_database():
-    """Überprüft, ob die Tabelle 'feuchtigkeitssensoren' existiert."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("""
@@ -42,7 +58,6 @@ def init_database():
 
 # Daten in die Datenbank schreiben
 def write_to_database(sensor_values):
-    """Schreibt Sensordaten in die SQLite-Datenbank."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -55,21 +70,26 @@ def write_to_database(sensor_values):
     conn.commit()
     conn.close()
 
-# GPIO-Zustände lesen und loggen
-def read_gpio_values():
-    """Liest die GPIO-Werte der 8 Pins aus."""
-    return [GPIO.input(pin) for pin in GPIO_PINS]
-
 # Hauptprogramm
 def main():
-    setup_gpio()
     init_database()
-    print("Starte Datenerfassung. Drücke Strg+C zum Beenden.")
+    print("Starte Datenerfassung...")
     try:
-        sensor_values = read_gpio_values()
-        print(f"Erfasste Werte: {sensor_values}")
-        write_to_database(sensor_values)
+        while True:
+            sensor_values = []
+            for i, channel in enumerate(SENSOR_CHANNELS):
+                raw_value = read_channel(channel)
+                min_val, max_val = SENSOR_RANGES[i]
+                normalized_value = normalize_value(raw_value, min_val, max_val)
+                sensor_values.append(normalized_value)
+            
+            print(f"Erfasste Werte (normalisiert): {sensor_values}")
+            write_to_database(sensor_values)
+            time.sleep(1)  # Wartezeit zwischen Messungen
     except KeyboardInterrupt:
         print("Programm beendet.")
     finally:
-        GPIO.cleanup()
+        spi.close()
+
+if __name__ == "__main__":
+    main()
