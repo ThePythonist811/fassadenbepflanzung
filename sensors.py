@@ -2,6 +2,7 @@ import spidev  # SPI-Bibliothek für MCP3008
 import sqlite3
 from datetime import datetime
 import time
+import serial.tools.list_ports
 
 DB_NAME = "sensordata/sensordata.db"
 
