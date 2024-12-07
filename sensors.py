@@ -3,7 +3,7 @@ import sqlite3
 from datetime import datetime
 import time
 
-DB_NAME = "sensordata.db"
+DB_NAME = "sensordata/sensordata.db"
 
 # Individuelle Messbereiche der Sensoren (min, max) in einer Liste
 SENSOR_RANGES = [
